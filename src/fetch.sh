@@ -9,7 +9,7 @@ BASE_URL="https://cloud5.lsd.ufcg.edu.br:8080/swift/v1/dadosjusbr"
 anos=`seq 2018 2020`
 
 # LISTA DE ÓRGÃOS
-orgaos="trepb mppb trt13 tjpb mpf mpm"
+orgaos="trepb mppb trt13 tjpb mpf mpm mprj mprs"
 
 for ano in $anos; do
     for mes in `seq 1 12`; do
