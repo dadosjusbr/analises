@@ -19,7 +19,7 @@ theme_set(theme_ipsum_rc())
 knitr::opts_chunk$set(tidy = FALSE, 
                       echo = FALSE,
                       warning = FALSE, 
-                      fig.height = 8,
+                      fig.height = 10,
                       fig.width = 8)
 set.seed(1014)
 options(digits = 2, scipen = 999)
@@ -294,7 +294,7 @@ geom_boxplot5num = function(){
 }
 ```
 
-```{r fig.height=17}
+```{r fig.height=19}
 perks_long_all = incomes %>%
   select(aid, starts_with("perks")) %>%
   pivot_longer(cols = starts_with("perks"),
@@ -318,7 +318,7 @@ incomes %>%
   reactable::reactable()
 ```
 
-```{r fig.height=17}
+```{r fig.height=19}
 perks_long = incomes %>%
   filter(active, type == "membro") %>% 
   select(aid, name, month, year, starts_with("perks")) %>%
@@ -352,7 +352,7 @@ perks_long %>%
   reactable::reactable()
 ```
 
-```{r fig.height=17}
+```{r fig.height=19}
 incomes %>% 
   filter(active, type == "membro" | aid == "trepb") %>%
   select(aid, starts_with("funds")) %>% 
