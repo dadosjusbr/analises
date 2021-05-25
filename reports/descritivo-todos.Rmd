@@ -11,6 +11,7 @@ library(tidyverse)
 library(hrbrthemes)
 library(ggbeeswarm)
 theme_set(theme_ipsum_rc())
+# https://coolors.co/083d77-ebebd3-da4167-f4d35e-f78764
 ```
 
 ```{r echo=FALSE,message=FALSE,warning=FALSE}
@@ -58,6 +59,42 @@ incomes %>%
        x = "",
        fill = "Situação")
 ```
+
+Para o relatório em dez/2020
+
+```{r}
+incomes %>%
+  filter(active, aid != "trepb") %>%
+  group_by(date) %>%
+  summarise(
+    pessoas = n(),
+    orgaos = n_distinct(aid),
+    recebimento_medio = mean(income_total)
+  ) %>%
+  filter(orgaos == 3) %>%
+  summarise(
+    media_pessoas = mean(pessoas),
+    media_recebimento = mean(recebimento_medio)
+  ) 
+```
+
+```{r}
+incomes %>%
+  filter(active, aid != "trepb") %>%
+  group_by(type, date) %>%
+  summarise(
+    pessoas = n(),
+    orgaos = n_distinct(aid),
+    recebimento_medio = mean(income_total)
+  ) %>%
+  filter(orgaos == 3) %>%
+  summarise(
+    media_pessoas = mean(pessoas),
+    media_recebimento = mean(recebimento_medio)
+  ) 
+```
+
+
 
 Para o TRE-PB, A discriminação dos tipos de cargos (membros, servidores...) é nossa.
 
@@ -242,7 +279,7 @@ ceiling_long %>%
 cl2 = incomes %>% 
   filter(active, type == "membro") %>% 
   group_by(aid) %>% 
-  slice_max(income_total_edr, n = 20, with_ties = FALSE) %>% 
+  slice_max(income_total_edr, n = 40, with_ties = FALSE) %>% 
   arrange(-income_total_edr) %>% 
   mutate(rank = 1:n()) %>% 
   ungroup() %>% 
