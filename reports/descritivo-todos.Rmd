@@ -4,6 +4,8 @@ output:
   prettydoc::html_pretty:
     theme: cayman
     css: './prettydoc-cayman.css'
+editor_options: 
+  chunk_output_type: console
 ---
 
 ```{r echo=FALSE,message=FALSE,warning=FALSE}
@@ -18,12 +20,11 @@ theme_set(theme_ipsum_rc())
 knitr::opts_chunk$set(tidy = FALSE, 
                       echo = FALSE,
                       warning = FALSE, 
-                      fig.height = 8,
+                      fig.height = 10,
                       fig.width = 8)
 set.seed(1014)
 options(digits = 2, scipen = 999)
 ```
-
 
 ```{r}
 incomes = read_csv(
@@ -144,7 +145,6 @@ income_cats_long = incomes %>%
   summarise(value = sum(value, na.rm = T), .groups = "drop")
 ```
 
-
 ```{r fig.width=12, fig.height=12}
 income_cats_long %>% 
   ggplot(aes(x = date, y = value / 1e6, fill = name)) + 
@@ -194,7 +194,6 @@ income_mem_long = incomes %>%
                names_to = "Categoria", 
                values_to = "Valor") 
 ```
-
 
 ```{r fig.height=6}
 income_mem_long %>% 
@@ -303,8 +302,6 @@ cl2 %>%
   )
 ```
 
-
-
 ## Distribuições dos valores
 
 ```{r}
@@ -334,7 +331,7 @@ geom_boxplot5num = function(){
 }
 ```
 
-```{r}
+```{r fig.height=19}
 perks_long_all = incomes %>%
   select(aid, starts_with("perks")) %>%
   pivot_longer(cols = starts_with("perks"),
@@ -351,15 +348,14 @@ perks_long_all %>%
        x = "Indenização",
        y = "Valor em milhares de R$")
 ```
+
 ```{r}
 incomes %>% 
   filter(perks_total > 75e3) %>% 
   reactable::reactable()
 ```
 
-
-
-```{r}
+```{r fig.height=19}
 perks_long = incomes %>%
   filter(active, type == "membro") %>% 
   select(aid, name, month, year, starts_with("perks")) %>%
@@ -393,9 +389,7 @@ perks_long %>%
   reactable::reactable()
 ```
 
-
-
-```{r}
+```{r fig.height=19}
 incomes %>% 
   filter(active, type == "membro" | aid == "trepb") %>%
   select(aid, starts_with("funds")) %>% 
@@ -412,8 +406,6 @@ incomes %>%
        x = "Indenização", 
        y = "Valor em milhares de R$")
 ```
-
-
 
 ## Remuneração no geral
 
@@ -500,11 +492,7 @@ per_month %>%
   theme(legend.position = "None")
 ```
 
-
-Criar gratificações exceto 13o e férias
-Comparar indenizações e gratificações
-Sabemos que Indenizações durante a pandemia não incluem diárias. Elas diminuíram?
-
+Criar gratificações exceto 13o e férias Comparar indenizações e gratificações Sabemos que Indenizações durante a pandemia não incluem diárias. Elas diminuíram?
 
 ```{r}
 per_reg %>%
@@ -526,7 +514,6 @@ per_reg %>%
   )
 ```
 
-
 ```{r}
 incomes %>% 
   slice_max(order_by = perks_pecuniary, 
@@ -541,4 +528,3 @@ incomes %>%
   select(year, month, name, role, type, active, income_total, perks_total, funds_total, funds_eventual_benefits) %>% 
   write_csv("~/maiores-beneficios_eventuais_trt.csv")
 ```
-

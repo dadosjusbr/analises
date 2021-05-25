@@ -1,0 +1,402 @@
+---
+title: "Descritivo de Remunerações do TJPB de 2018 a 2020"
+
+output:
+  prettydoc::html_pretty:
+    theme: cayman
+    css: './prettydoc-cayman.css'
+    highlight: github
+    df_print: paged
+---
+  
+```{r echo = FALSE, message = FALSE, warning = FALSE, cache = FALSE, paged.print = FALSE}
+library(here)
+library(tidyverse)
+library(skimr)
+
+options(scipen=999)
+dados <- read_csv(here("dados/ready/incomes-all.csv"))
+
+dados_filtrados <- dados %>% 
+  filter(aid == "tjpb") %>% 
+  mutate(date = lubridate::ymd(paste(year, month, "01")))
+
+# skimr::skim(dados_filtrados)
+```
+
+# Paraíba
+## TJPB - 2018 a 2020
+## Análise Descritiva
+
+```{r echo = FALSE, message = FALSE, warning = FALSE, cache = FALSE, paged.print = FALSE}
+n_funcionarios_tjpb <- dados_filtrados %>% 
+  filter(year == 2020 & month == 7) %>% 
+  unique() %>%
+  count() %>% 
+  pull(n)
+```
+
+### Distribuição dos funcionários no TJPB de 2018 a 2020
+
+Em julho de 2020 o TJPB apresentava um total de **`r n_funcionarios_tjpb`** funcionários.
+
+#### Geral por mês
+```{r echo = FALSE, message = FALSE, warning = FALSE, cache = FALSE, paged.print = FALSE}
+dados_filtrados %>% 
+  count(aid, active, date) %>% 
+  ggplot(aes(x = date, n, fill = active)) +
+  geom_col() + 
+  labs(title = "Registros por mês", 
+       y = "Registros", 
+       x = "")
+```
+
+#### Ativos por tipo
+
+```{r echo = FALSE, message = FALSE, warning = FALSE, cache = FALSE, paged.print = FALSE}
+dados_filtrados %>% 
+  filter(active) %>% 
+  count(aid, type, date) %>% 
+  group_by(aid, date) %>% 
+  mutate(prop = n / sum(n)) %>% 
+  ggplot(aes(date, prop, fill = type)) +
+  geom_col() + 
+  labs(title = "Registros dos ativos por mês", 
+       y = "Proporção", 
+       x = "") + 
+  scale_fill_brewer(palette = "Accent")
+```
+
+#### Distribuição geral por tipo (em jul de cada ano)
+```{r echo = FALSE, message = FALSE, warning = FALSE, cache = FALSE, paged.print = FALSE}
+distribuição_tipos_tjpb <- dados_filtrados %>% 
+  filter(month == 7) %>% 
+  group_by(type, year) %>% 
+  count() %>%
+  group_by(year) %>%
+  mutate(grupo = row_number()) %>%
+  pivot_wider(names_from = "year", values_from = "n") %>%
+  select(-grupo)
+
+distribuição_tipos_tjpb %>%
+  rename(Tipo = type) %>%
+  knitr::kable()
+```
+
+* Membros: É uma classificação mais ampla que abrange todo o tipo agente público que “representa” o Poder Judiciário ou o Ministério Público.
+
+* Servidores: Um servidor público é um funcionário da administração pública que possui um vínculo de trabalho com órgãos que fazem parte do Estado.
+
+### Visão geral dos pagamentos de 2018 a 2020
+
+Os pagamentos medianos, máximos e mínimos se deram da seguinte forma.
+
+```{r echo = FALSE, message = FALSE, warning = FALSE, cache = FALSE, paged.print = FALSE}
+visao_geral <- dados_filtrados %>%
+  ggplot(aes(x = income_total)) +
+  facet_grid(year ~ .) +
+  geom_boxplot() +
+  labs(title = "Salários para todos na folha",
+       x = "Valores",
+       y = "Anos")
+visao_geral
+```
+
+### Distribuição dos tipos dos gastos de 2018 a 2020
+
+```{r echo = FALSE, message = FALSE, warning = FALSE, cache = FALSE, paged.print = FALSE}
+bar_chart_tjpb <- dados_filtrados %>%
+  mutate(`Salários` = wage, `Indenizações` = perks_total, `Benefícios` = funds_total) %>%
+  gather(key="type", value = "value", `Salários`, `Indenizações`, `Benefícios`) %>%
+  select(name, role, value, type, date) %>%
+  group_by(date, type) %>%
+  summarise(sum = sum(value))
+
+bar_chart_tjpb %>%
+  ggplot(aes(fill=type, y=sum, x=date)) +
+  geom_bar(position="stack", stat="identity") +
+  scale_fill_brewer(palette = "Set2") + theme_minimal() +
+  labs(y = "Valor total", x = "", fill = "Classificação", title = "Distribuições das remunerações do TJPB") +
+  scale_y_continuous(labels = scales::comma)
+```
+
+Os benefícios aqui descritos são quaisquer remunerações recebidas por um funcionário que não sejam proveniente de salários ou indenizações. Alguns exemplos de benefícios são: diárias, gratificações, remuneração por função de confiança, benefícios pessoais ou eventuais.
+
+As indenizações, por sua vez, são valores especiais recebidos eventualmente. Por exemplo: Auxílios alimentação, moradia, transporte, natalidade, pré-escolar, ajudas de custo.
+
+### Remunerações médias dos funcionários de acordo com seu tipo 
+
+```{r echo = FALSE, message = FALSE, warning = FALSE, cache = FALSE, paged.print = FALSE}
+salario_medio_por_tipo <- dados_filtrados %>% 
+  group_by(type, year) %>%
+  summarise(mean = mean(income_total)) %>%
+  mutate(grupo = row_number()) %>%
+  pivot_wider(names_from = "type", values_from = "mean") %>%
+  select(-grupo)
+
+salario_medio_por_tipo %>%
+  rename(Ano = year) %>%
+  knitr::kable()
+```
+
+### Distribuição das remunerações dos funcionários de acordo com seu tipo 
+```{r echo = FALSE, message = FALSE, warning = FALSE, cache = FALSE, paged.print = FALSE}
+#Distribuição dos salários 2020
+dados_filtrados %>%
+  filter(year == 2020 & month == 7) %>%
+  ggplot(aes(x = type, y = income_total, color = type)) +
+  geom_violin() +
+  theme_minimal() + 
+  scale_y_log10(labels = scales::comma, breaks=c(1000, 1500, 2000, 3000, 5000, 10000, 20000, 35000, 50000)) + 
+  scale_color_brewer(palette = "Set2") +
+  ggbeeswarm::geom_quasirandom(shape = 16, alpha= 0.5, position = position_jitter(0.2)) + 
+  labs(x = "", color = "Tipo  de funcionário", y = "Remuneração", title = "Distribuição das remunerações do TJPB em julho de 2020") 
+```
+
+### Distribuição das remunerações de 2018 a 2020
+#### Média dos salários por ano
+```{r echo = FALSE, message = FALSE, warning = FALSE, cache = FALSE, paged.print = FALSE}
+salario_medio <- dados_filtrados %>% 
+  group_by(year) %>%
+  summarise(mean = mean(income_total)) %>%
+  rename(Média = mean, Ano = year)
+
+salario_medio %>%
+  knitr::kable()
+```
+
+#### Distribuição dos salários por ano
+Na distribuição das remunerações de 2018 existem funcionários com remuneração acima de **R\$ 60.000,00** e outros com remuneração abaixo de **R\$ 5.000,00**. A média salárial foi de **R\$ 10.097,02**
+  
+```{r echo = FALSE, message = FALSE, warning = FALSE, cache = FALSE, paged.print = FALSE}
+dados_filtrados %>% 
+  filter(year == 2018) %>% 
+  ggplot(aes(x = income_total/1000, y = month, color = "tjpb")) +  
+  theme_minimal() + 
+  scale_color_brewer(palette = "Set2") +
+  geom_point(shape = 124, size = 6, alpha = 0.3) +
+  scale_y_continuous(breaks=seq(1, 12, by = 1)) +
+  scale_x_continuous(labels = scales::comma, trans = "log", breaks=c(1, 5, 10, 20, 30, 40, 50, 60)) +
+  theme(legend.position = "none") +
+  labs(x = "Valor da remuneração (em milhares R$)", y = "Mês", title = "Distribuição das remunerações em 2018") +
+  geom_point(aes(x = 10.097), size = 4, color = "#111111", shape = 124) +
+  annotate("text", label = "Remuneração media de 2018", x = 3, y = 13, color = "#111111") 
+```
+
+Em 2019 existem funcinários com remuneração acima de **R\$ 60.000,00** e outros com remuneração abaixo de **R\$ 5.000,00**. A média salárial foi de **R\$ 10.262,00**
+  
+```{r echo = FALSE, message = FALSE, warning = FALSE, cache = FALSE, paged.print = FALSE}
+dados_filtrados %>% 
+  filter(year == 2019) %>% 
+  ggplot(aes(x = income_total/1000, y = month, color = "tjpb")) +  
+  theme_minimal() + 
+  scale_color_brewer(palette = "Set2") +
+  geom_point(shape = 124, size = 6, alpha=0.3) +
+  scale_y_continuous(breaks=seq(1, 12, by = 1)) +
+  scale_x_continuous(labels = scales::comma, trans = "log", breaks=c(1, 5, 10, 20, 30, 40, 50, 60)) +
+  theme(legend.position = "none") +
+  labs(x = "Valor da remuneração (em milhares R$)", y = "Mês", title = "Distribuição das remuneração em 2019") +
+  geom_point(aes(x = 10.262), size = 4, color = "#111111", shape = 124) +
+  annotate("text", label = "Remuneração media de 2019", x = 3, y = 13, color = "#111111") 
+```
+
+Em 2020 existem funcinários com remuneração acima de **R\$ 50.000,00** e outros com remuneração abaixo de **R\$ 5.000,00**. A média salárial foi de **R\$ 10.134,46**, até então.
+
+```{r echo = FALSE, message = FALSE, warning = FALSE, cache = FALSE, paged.print = FALSE}
+dados_filtrados %>% 
+  filter(year == 2020) %>% 
+  ggplot(aes(x = income_total/1000, y = month, color = "tjpb")) +  
+  theme_minimal() + 
+  scale_color_brewer(palette = "Set2") +
+  geom_point(shape = 124, size = 6, alpha=0.3) +
+  scale_y_continuous(breaks=seq(1, 12, by = 1)) +
+  scale_x_continuous(labels = scales::comma, trans   = "log", breaks=c(1, 5, 10, 20, 30, 40, 50, 60)) +
+  theme(legend.position = "none") +
+  labs(x = "Valor da remuneração (em milhares R$)", y = "Mês", title = "Distribuição das remunerações em 2020") +
+  geom_point(aes(x = 10.134), size = 4, color = "#111111", shape = 124) +
+  annotate("text", label = "Remuneração media de 2020", x = 3, y = 13, color = "#111111") 
+```
+
+### Distribuição das remunerações por cargo
+Diversos cargos acumulam remunerações acima de **R\$ 30.000,00**. Entre eles, temos: Juíz, Diretor de Fórum, Desembargador, e vários outros. Cargos como Técnico Judiciário, Oficial de Justiça, Chefe de Cartório, apresentam rendimentos abaixo de **R\$ 25.000,00**, bem como grande parte dos cargos restantes. 
+```{r echo = FALSE, message = FALSE, warning = FALSE, cache = FALSE, paged.print = FALSE}
+library(stringr)
+
+dados_normalized_role <- dados_filtrados %>% 
+  mutate(normalized_role =
+           case_when(
+             str_detect(str_to_lower(role), "oficial  de justiça") ~ "Oficial de Justiça",
+             str_detect(str_to_lower(role), "tecnico judiciario") | str_detect(str_to_lower(role), "técnico judiciario") | str_detect(str_to_lower(role), "tecnico judiciário") | str_detect(str_to_lower(role), "técnico judiciário") ~ "Técnico Judiciário",
+             str_detect(str_to_lower(role), "juiz") ~ "Juiz", 
+             str_detect(str_to_lower(role), "desembargador") ~ "Desembargador", 
+             str_detect(str_to_lower(role), "analista judiciário") | str_detect(str_to_lower(role), "analista judiciario") | str_detect(str_to_lower(role), "analisa judiciário") ~ "Analista Judiciário",
+             str_detect(str_to_lower(role), "diretor de fórum") ~ "Diretor de Fórum",
+             str_detect(str_to_lower(role), "auxiliar judiciário")  ~ "Auxiliar Judiciário",
+             TRUE ~ "Outros"
+           )
+  )
+
+dados_normalized_role  %>% 
+  filter(year == 2020 & month == 7 & income_total < 60000) %>%
+  ggplot(aes(x=normalized_role, y=income_total, color=normalized_role)) +
+  theme_minimal() + 
+  scale_color_brewer(palette = "Set2") +
+  ggbeeswarm::geom_quasirandom(shape=16, alpha= 0.5,position=position_jitter(0.3)) + 
+  labs(x="",color= "Tipo  de funcionário", y = "Remuneração", title = "Remunerações por cargos em jul de 2020") + 
+  coord_flip() + 
+  scale_y_continuous(breaks= c(0,10000,20000,30000,40000,50000,60000)) +
+  stat_summary(fun.y = median, colour = "#F25E4B", geom = "point", size = 1) 
+```
+
+### Distribuição dos tipos de auxílios e indenizações
+#### Benefícios
+```{r echo = FALSE, message = FALSE, warning = FALSE, cache = FALSE, paged.print = FALSE}
+beneficios_por_ano <- dados_filtrados %>% 
+  select(year, starts_with("funds")) %>%
+  pivot_longer(cols = starts_with("funds"),
+               names_to = "fund",
+               values_to =  "value") %>%
+  group_by(fund, year) %>%
+  filter(!is.na(value) & value > 0) %>%
+  summarise(soma = sum(value)) %>%
+  mutate(grupo = row_number()) %>%
+  pivot_wider(names_from = "fund", values_from = "soma") %>%
+  select(-grupo)
+
+#remove colunas vazias
+beneficios_por_ano %>%
+  select(year, funds_eventual_benefits, funds_personal_benefits, funds_trust_position, funds_total) %>%
+  rename(Ano = year, 'Benefícios Eventuais' = funds_eventual_benefits, 'Benefícios Pessoais' = funds_personal_benefits, 'Cargo de Confiança' = funds_trust_position, 'Total' = funds_total) %>%
+  knitr::kable()
+```
+
+Benefícios Permanentes (funds_personal_benefits) são os benefícios adquiridos judicialmente e outros benefícios pessoais. Benefícios Eventuais (funds_eventual_benefits), são benefícios como bônus de natal e férias. Já Cargos de Confiança (funds_trust_position) são benefícios recebidos por funcionários em cargos de confiança.
+
+Os outros benefícios, **funds_daily**,	**funds_gratification**,	**funds_origin_pos** e **funds_others_total**, não possuem valores associados, em todos os anos.
+
+```{r echo = FALSE, message = FALSE, warning = FALSE, cache = FALSE, paged.print = FALSE}
+bar_chart_tjpb <- dados_filtrados %>%
+  mutate(`Permanentes` = funds_personal_benefits, `Bônus e Férias` = funds_eventual_benefits, `Cargos de Confiança` = funds_trust_position) %>%
+  gather(key="type", value = "value", `Permanentes`, `Bônus e Férias`, `Cargos de Confiança`) %>%
+  select(name, role, value, type, date) %>%
+  group_by(date, type) %>%
+  filter(!is.na(value) & value > 0) %>%
+  summarise(sum = sum(value)) 
+
+bar_chart_tjpb %>%
+  ggplot(aes(fill=type, y=sum, x=date)) +
+  geom_bar(position="stack", stat="identity") +
+  scale_fill_brewer(palette = "Set2") + theme_minimal() +
+  labs(y = "Valor total", x = "", fill = "Tipo de Benefício", title = "Distribuições dos benefícios do TJPB") +
+  scale_y_continuous(labels = scales::comma)
+```
+
+A fonte principal dos aumentos recorrentes nessa categoria é os benefícios eventuais, como bônus e férias (funds_eventual_benefits). Os outros benefícios se mantém estáveis.
+
+#### Indenizações
+```{r echo = FALSE, message = FALSE, warning = FALSE, cache = FALSE, paged.print = FALSE}
+indenizacoes_por_ano <- dados_filtrados %>% 
+  select(year, starts_with("perks")) %>%
+  pivot_longer(cols = starts_with("perks"),
+               names_to = "perk",
+               values_to =  "value") %>%
+  group_by(perk, year) %>%
+  filter(!is.na(value) & value > 0) %>%
+  summarise(soma = sum(value)) %>%
+  mutate(grupo = row_number()) %>%
+  pivot_wider(names_from = "perk", values_from = "soma") %>%
+  select(-grupo)
+
+#remove colunas vazias
+indenizacoes_por_ano %>%
+  select(year, perks_total) %>%
+  rename(Ano = year, 'Total' = perks_total) %>%
+  knitr::kable()
+```
+
+O único valor presente é o referente ao total das indenizações (perks_total). As indenizações específicas não possuem valores associados. **perks_pecuniary**, **perks_food**, **perks_health**, **perks_compensatory_leave**, **perks_birth**, **perks_housing**, **perks_subsistence**, **perks_vacation**,	**perks_transportation**,	**perks_pre_school**, **perks_vacation_pecuniary**, **perks_furniture_transport**, **perks_premium_license_pecuniary** são todos NA, em todos os anos.
+
+```{r echo = FALSE, message = FALSE, warning = FALSE, cache = FALSE, paged.print = FALSE}
+geom_boxplot5num = function(){
+  geom_boxplot(aes(
+    ymin = y0,
+    lower = y25,
+    middle = y50,
+    upper = y75,
+    ymax = y100
+  ),
+  stat = "identity")
+}
+
+five_nums <- function(d, column){
+  d %>% 
+    filter(!is.na(value)) %>% 
+    mutate(value = value / 1e3) %>% 
+    group_by(year, {{column}}) %>% 
+    summarise(y0 = min(value),
+              y25 = quantile(value, 0.25),
+              y50 = median(value),
+              y75 = quantile(value, 0.75),
+              y100 = max(value), 
+              .groups = "drop"
+    )
+}
+```
+
+```{r echo = FALSE, message = FALSE, warning = FALSE, cache = FALSE, paged.print = FALSE}
+perks_long_all = dados_filtrados %>%
+  select(year, perks_total) %>%
+  pivot_longer(cols = starts_with("perks"),
+               names_to = "perk",
+               values_to =  "value")
+
+perks_long_all %>%
+  five_nums(perk) %>%
+  ggplot(aes(x = reorder(perk, y50))) +
+  facet_grid(year ~ .) +
+  geom_boxplot5num() +
+  coord_flip()  +
+  labs(title = "Indenizações para todos na folha",
+       x = "Indenização",
+       y = "Valor em milhares de R$")
+```
+Um valor chama atenção em 2018. Em dezembro, um Diretor de Fórum - Nível II recebeu **R\$ 28.232,48** de indenização, valor quase treze vezes mais alto que a média no mesmo ano, que foi de **R\S 2.250,00**.
+
+#### Por membros ativos
+```{r echo = FALSE, message = FALSE, warning = FALSE, cache = FALSE, paged.print = FALSE}
+perks_long = dados_filtrados %>%
+  filter(active, type == "membro") %>% 
+  select(aid, name, month, year, perks_total) %>%
+  pivot_longer(cols = starts_with("perks"),
+               names_to = "perk",
+               values_to =  "value")
+
+perks_long %>% 
+  five_nums(perk) %>% 
+  ggplot(aes(x = reorder(perk, y50))) + 
+  facet_grid(year ~ .) + 
+  geom_boxplot(
+    aes(ymin = y0, lower = y25, middle = y50, upper = y75, ymax = y100),
+    stat = "identity"
+  ) +
+  coord_flip() + 
+  labs(title = "Indenizações para membros ativos", 
+       x = "Indenização", 
+       y = "Valor em milhares de R$")
+```
+
+### Distribuição dos principais cargos em julho de 2020
+```{r echo = FALSE, message = FALSE, warning = FALSE, cache = FALSE, paged.print = FALSE}
+cargos_tjpb <- dados_filtrados %>% 
+  filter(year == 2020 & month == 7) %>% 
+  group_by(role) %>% 
+  count() %>%
+  filter(n >= 20) %>%
+  rename(Quantidade = n, Cargo = role) %>%
+  arrange(desc(Quantidade)) %>%
+  knitr::kable()
+cargos_tjpb
+```
+
+<div class="logo">![](https://avatars2.githubusercontent.com/u/17051677?s=200&v=4)</div>
+  
