@@ -1,6 +1,8 @@
 # Análises com dados do DadosJusBR
 
-Temos no ar: 
+Com
+
+  * [Completude dos dados recuperados](https://dadosjusbr.github.io/analises/completude-dados.html)
   * [Descritivo de todos os meses para todos os órgãos](https://dadosjusbr.github.io/analises/descritivo-todos.html)
   * [Descritivo dos dados de 2018 a 2020 do MPPB, libertados com a versão do dadosjus de nov/2020](https://dadosjusbr.github.io/analises/relatorio-descritivo-2018-2020.html)
   * [Descritivo dos dados de 2018 a 2020 do TRT13, libertados com a versão do dadosjus de nov/2020](https://dadosjusbr.github.io/analises/descritivo-trt13-2018-2020.html)
