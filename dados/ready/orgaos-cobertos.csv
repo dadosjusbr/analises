@@ -2,6 +2,7 @@ local,orgao
 Federal,mpm
 Federal,mpf
 Federal,mpdft
+Federal,tjdft
 AL,tjal
 BA,mpba
 BA,tjba
@@ -20,15 +21,18 @@ PB,trepb
 PB,trt13
 PB,tjpb
 PR,mppr
+PR,tjpr
 PE,tjpe
 PI,tjpi
 RN,mprn
 RN,tjrn
 RS,mprs
 RS,tjrs
+RS,tjmrs
 RJ,mprj
 RJ,tjrj
 SP,mpsp
 SP,tjsp
+SP,tjmsp
 SE,tjse
 TO,tjto
