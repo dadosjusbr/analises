@@ -5,13 +5,13 @@ library(tidyr)
 library(purrr)
 library(jsonlite)
 
-federais = fromJSON("https://dadosjusbr.org/uiapi/v1/orgao/Federal")$Agency$Name
+federais = fromJSON("https://api.dadosjusbr.org/uiapi/v1/orgao/Federal")$Agency$Name
 
-pb = fromJSON("https://dadosjusbr.org/uiapi/v1/orgao/PB")$Agency$Name
+pb = fromJSON("https://api.dadosjusbr.org/uiapi/v1/orgao/PB")$Agency$Name
 
 orgaos_lugar <- function(lugar){
   message("Procurando órgãos: ", lugar)
-  url_lugar = stringr::str_glue("https://dadosjusbr.org/uiapi/v1/orgao/{lugar}")
+  url_lugar = stringr::str_glue("https://api.dadosjusbr.org/uiapi/v1/orgao/{lugar}")
   jsonlite::fromJSON(url_lugar)$Agency$Name
 }
 
@@ -23,3 +23,4 @@ existem = tibble(local = cobertos) %>%
 existem %>% 
   unnest(orgao) %>% 
   readr::write_csv(here::here("dados/ready/orgaos-cobertos.csv"))
+
