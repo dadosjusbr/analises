@@ -48,7 +48,9 @@ incomes = incomes %>%
     str_starts(aid, "tre") ~ "TRE", 
     str_starts(aid, "trt") ~ "TRT", 
     TRUE ~ NA_character_
-  ))
+  )) 
+# %>% 
+#   filter(!(aid_class %in% c("TRE", "TRT")))
 
 ```
 
@@ -84,26 +86,63 @@ incomes %>%
 
 O Preenchimento Relativo de um órgão emum mês é o número de registros de um mês dividido pelo maior número de registros do órgão.
 
-```{r fig.height=12, fig.width=9}
-contagens = incomes %>% 
-  group_by(aid, date) %>% 
-  summarise(registros = n(), .groups = "drop") %>% 
-  complete(aid, date, fill = list(registros = NA)) %>% 
-  group_by(aid) %>% 
-  mutate(relativo = registros/max(registros, na.rm = T)) 
+```{r}
+incomes %>% 
+  group_by(aid_class) %>% 
+  summarise(orgaos = n_distinct(aid)) %>% 
+  reactable(striped = T)
+```
 
+```{r}
+contagens = incomes %>% 
+  group_by(aid_class, aid, date) %>% 
+  summarise(registros = n(), .groups = "drop") %>% 
+  complete(nesting(aid_class, aid), date, fill = list(registros = NA)) %>% 
+  group_by(aid) %>% 
+  mutate(relativo = registros/max(registros, na.rm = T)) %>% 
+  ungroup()
+```
+
+```{r}
 contagens %>% 
-  mutate(relativo_temp = replace_na(relativo, 0), 
-         relativo = pmax(relativo, .5)) %>% 
-  ggplot(aes(y = reorder(aid, relativo_temp, sd), x = date, fill = relativo)) + 
-  geom_tile() + 
-  scale_fill_viridis_c(option="magma", na.value = "gray80") + 
+  summarise(
+    Total = n(),
+    `Pouco preenchidos`= sum(relativo < .5, na.rm = T), 
+    `Pouco prop` = `Pouco preenchidos` / n(), 
+    `Faltantes`  = sum(is.na(relativo), na.rm = T), 
+    `Faltantes prop` = Faltantes / n()) %>% 
+  reactable(striped = T)
+```
+
+
+
+```{r fig.height=8, fig.width=9}
+contagens %>%
+  mutate(relativo_temp = replace_na(relativo, 0),
+         relativo = pmax(relativo, .5)) %>%
+  ggplot(aes(
+    y = reorder(aid, relativo_temp, sd),
+    x = date,
+    fill = relativo
+  )) +
+  facet_grid(reorder(aid_class, relativo_temp, mean) ~ ., scales = "free") +
+  geom_tile() +
+  scale_fill_viridis_c(option = "magma", na.value = "gray80") +
   labs(
     title = "Registros recuperados",
     subtitle = "Quão preenchido está cada mês comparado ao maior. Cinza é faltante.",
-    y = "", 
-       fill = "Preenchimento relativo")
+    y = "",
+    fill = "Preenchimento relativo"
+  )
+
+ggsave("preenchimentos.png", height = 8, width = 9, dpi = 100)
 ```
+
+```{r}
+# incomes %>% 
+#   filter(aid == "tjsp", year == 2018, month == 1)
+```
+
 
 ```{r fig.height=15, fig.width=8}
 contagens %>% 
@@ -123,4 +162,34 @@ Em formato de tabela buscável:
 contagens %>% 
   mutate(relativo = round(relativo, 2)) %>% 
   reactable(striped = T, searchable = T)
+```
+
+## Valor
+
+```{r}
+totais = incomes %>% 
+  group_by(aid_class, aid, date) %>% 
+  summarise(total = sum(income_total), .groups = "drop") %>% 
+  complete(nesting(aid_class, aid), date, fill = list(total = NA)) %>% 
+  group_by(aid) %>% 
+  mutate(relativo = total/max(total, na.rm = T)) 
+
+totais %>%
+  mutate(relativo_temp = replace_na(relativo, 0)) %>%
+  ggplot(aes(
+    y = reorder(aid, relativo_temp, sd),
+    x = date,
+    fill = relativo
+  )) +
+  facet_grid(reorder(aid_class, relativo_temp, mean) ~ ., scales = "free") +
+  geom_tile() +
+  scale_fill_viridis_c(option = "viridis", na.value = "gray80", direction = -1) +
+  labs(
+    title = "Montante reportado",
+    subtitle = "Razão entre remuneração total no mês e maior mês. Cinza significa faltante.",
+    y = "",
+    fill = "Valor relativo\nao máximo"
+  )
+
+ggsave("montantes.png", height = 8, width = 9, dpi = 100)
 ```

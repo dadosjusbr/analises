@@ -1,0 +1,105 @@
+---
+title: "Completude"
+output: 
+  prettydoc::html_pretty:
+    theme: paper
+editor_options: 
+  chunk_output_type: inline
+---
+
+```{r setup, echo=FALSE,message=FALSE,warning=FALSE}
+library(tidyverse)
+library(hrbrthemes)
+library(reactable)
+theme_set(theme_ipsum_rc())
+# https://coolors.co/083d77-ebebd3-da4167-f4d35e-f78764
+
+knitr::opts_chunk$set(tidy = FALSE, 
+                      echo = FALSE,
+                      fig.height = 10,
+                      fig.width = 8)
+set.seed(1014)
+options(digits = 2, scipen = 999)
+```
+
+```{r}
+incomes = read_csv(
+  here::here("dados/ready/incomes-all.csv"),
+  col_types = cols(
+    aid = col_character(),
+    month = col_integer(),
+    year = col_integer(),
+    date = col_date(),
+    reg = col_character(),
+    name = col_character(),
+    role = col_character(),
+    type = col_character(),
+    workplace = col_character(),
+    active = col_logical(),
+    .default = col_double()
+  )
+)
+
+incomes = incomes %>% 
+  mutate(aid_class = case_when(
+    str_starts(aid, "mp") ~ "MP", 
+    str_starts(aid, "tj") ~ "TJ", 
+    str_starts(aid, "tre") ~ "TRE", 
+    str_starts(aid, "trt") ~ "TRT", 
+    TRUE ~ NA_character_
+  )) 
+# %>% 
+#   filter(!(aid_class %in% c("TRE", "TRT")))
+
+```
+
+## Órgãos cobertos
+
+```{r}
+preenchido = incomes %>% 
+  group_by(aid_class, aid) %>% 
+  summarise(across(everything(), list(fill = ~ sum(!is.na(.x)) / n())), 
+            .groups = "drop")
+
+pree_long = preenchido %>% 
+  pivot_longer(cols = ends_with("fill"), names_to = "coluna", values_to = "preenchido")
+```
+
+```{r}
+pree_long = pree_long %>% 
+  mutate(coluna = str_remove(coluna, "_fill"), 
+         grupo = case_when(
+           str_starts(coluna, "perks") ~ "Indenizações", 
+           str_starts(coluna, "funds") ~ "Benefícios", 
+           str_starts(coluna, "discount") ~ "Descontos",
+           str_starts(coluna, "income|wage") ~ "Recebimento",
+           TRUE ~ "Cadastro"
+         )) 
+```
+
+
+```{r fig.width=16, fig.height=10}
+pree_long %>%
+  filter(!str_detect(coluna, "^[a-zA-Z]+_total|except")) %>% # Omite as colunas calculadas por nós
+  ggplot(aes(
+    x = reorder(aid,-preenchido),
+    y = reorder(coluna, preenchido),
+    fill = preenchido
+  )) +
+  facet_grid(
+    reorder(grupo,-preenchido) ~ aid_class,
+    scales = "free",
+    space = 'free',
+    switch = "x"
+  ) +
+  geom_tile(color = "black") +
+  scale_x_discrete(position = "top") +
+  scale_fill_viridis_c(option = "magma") +
+  labs(
+    x = "",
+    y = "",
+    title = "Preenchimento por colunas",
+    subtitle = "Todos os dados do site"
+  )
+```
+
