@@ -89,7 +89,7 @@ O Preenchimento Relativo de um órgão emum mês é o número de registros de um
 ```{r}
 incomes %>% 
   group_by(aid_class) %>% 
-  summarise(orgas = n_distinct(aid)) %>% 
+  summarise(orgaos = n_distinct(aid)) %>% 
   reactable(striped = T)
 ```
 
